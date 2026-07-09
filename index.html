@@ -924,13 +924,24 @@ function normF(s){
 
 // ── ICONOS ───────────────────────────────────────────────────
 function esMovil(){ return window.innerWidth <= 640; }
+function factorZoom(){
+  // Escala los marcadores según el zoom: muy pequeños al alejar, normales al acercar.
+  var z = (typeof map !== 'undefined' && map.getZoom) ? map.getZoom() : 16;
+  if(z <= 13) return 0.25;     // muy alejado: casi puntos
+  if(z <= 14) return 0.34;
+  if(z <= 15) return 0.45;
+  if(z <= 16) return 0.60;
+  if(z <= 17) return 0.80;
+  return 1;                     // zoom muy cercano (18+): tamaño completo
+}
 function mkIco(cat, rot, esCabalgata){
   var c=CAT_COL[cat]||'#888', e=CAT_EMO[cat]||'📍';
+  var fz = factorZoom();
   // CIERRES DE CABALGATA: rectángulo rojo tipo barrera, rotado según la calle
   if(cat==='Cierres Viales' && esCabalgata){
     var rc = rot ? 'transform:rotate('+rot+'deg)' : '';
-    var largo = esMovil() ? 22 : 26;
-    var ancho = esMovil() ? 8 : 9;
+    var largo = Math.round((esMovil() ? 22 : 26) * fz);
+    var ancho = Math.round((esMovil() ? 8 : 9) * fz);
     return L.divIcon({className:'',
       html:'<div style="width:'+largo+'px;height:'+ancho+'px;background:#E23B2E;border:1.5px solid #fff;border-radius:2px;box-shadow:0 1px 4px rgba(0,0,0,0.4);'+rc+'"></div>',
       iconSize:[largo,ancho],iconAnchor:[largo/2,ancho/2],popupAnchor:[0,-ancho/2-2]});
@@ -939,8 +950,8 @@ function mkIco(cat, rot, esCabalgata){
   if(cat==='Estructuras / Tarimas') sh='border-radius:2px';
   if(cat==='Cierres Viales') sh='clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0';
   var r=rot?'transform:rotate('+rot+'deg)':'';
-  var sz = esMovil() ? 24 : 28;
-  var fs = esMovil() ? 11 : 13;
+  var sz = Math.round((esMovil() ? 24 : 28) * fz);
+  var fs = Math.round((esMovil() ? 11 : 13) * fz);
   return L.divIcon({className:'',
     html:'<div style="width:'+sz+'px;height:'+sz+'px;'+sh+';background:'+c+';display:flex;align-items:center;justify-content:center;font-size:'+fs+'px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.28);'+r+'">'+e+'</div>',
     iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2-2]});
@@ -985,7 +996,7 @@ function mkPop(p, tipoLabel){
     var esCierreCabalgata = (p.CATEGORIA==='Cierres Viales' && (p.TRAMO_CABALGATA || String(p.ACTIVIDAD_ID||'').indexOf('mega_cabalgata')!==-1));
     var m=L.marker([c[1],c[0]],{icon:mkIco(p.CATEGORIA,p.ROTACION,esCierreCabalgata)})
       .bindPopup(function(){ return mkPop(p, p.SUBCATEGORIA||p.CATEGORIA); },{maxWidth:300, autoPan:true});
-    m._cat=p.CATEGORIA; m._p=p; m._act=p.ACTIVIDAD_ID||''; m._siempre=!!p.SIEMPRE_VISIBLE;
+    m._cat=p.CATEGORIA; m._p=p; m._act=p.ACTIVIDAD_ID||''; m._siempre=!!p.SIEMPRE_VISIBLE; m._esCab=esCierreCabalgata;
     marcadores.push(m);
   });
   console.log('✅ Puntos: '+marcadores.length);
@@ -1005,11 +1016,14 @@ function mkPop(p, tipoLabel){
     var l=L.polyline(coords,{color:c,weight:pesoLinea,opacity:0.9,
       dashArray:dash,lineJoin:'round',lineCap:p.FASE===2?'round':'butt'})
       .bindPopup(function(){ return mkPop(p,'Ruta — '+p.CATEGORIA); },{maxWidth:300});
-    // Flechas de dirección en la Fase 1 (traslado)
+    // Flechas de dirección
     if(p.ACTIVIDAD_ID){
-      var catFlechas = ['Procesión','Carrera pedestre','Desfile cultural','Cabalgata','Paseo de carretas','Ciclismo'];
+      var catFlechas = ['Procesión','Carrera pedestre','Desfile cultural','Cabalgata','Paseo de carretas'];
       var densidad = 0;
-      if(p.CON_FLECHAS){ densidad = Math.max(5, Math.floor(coords.length/8)); }
+      if(p.ACTIVIDAD_ID==='carrera_ciclismo'){
+        // Ciclismo: pocas flechas en el mapa principal (el detalle está en el mapa de altimetría)
+        densidad = 6;
+      } else if(p.CON_FLECHAS){ densidad = Math.max(5, Math.floor(coords.length/8)); }
       else if(catFlechas.indexOf(p.CATEGORIA)!==-1){ densidad = 6; }
       if(densidad>0) agregarFlechas(coords, c, p.ACTIVIDAD_ID, densidad);
     }
@@ -1240,7 +1254,7 @@ function irAlMapa(lat, lng, actId){
     marcadores.forEach(function(m){ if(map.hasLayer(m) && !m._siempre) grupo.addLayer(m); });
     lineasData.forEach(function(item){ if(map.hasLayer(item.l)) grupo.addLayer(item.l); });
     zonasData.forEach(function(item){ if(map.hasLayer(item.z)) grupo.addLayer(item.z); });
-    if(grupo.getLayers().length>0){ map.fitBounds(grupo.getBounds().pad(0.3)); }
+    if(grupo.getLayers().length>0){ map.fitBounds(grupo.getBounds().pad(0.12), {maxZoom:17}); }
     else{ map.setView([lat,lng],18); }
 
     setTimeout(function(){
@@ -1256,7 +1270,7 @@ function irAlMapa(lat, lng, actId){
       if(!objetivo){
         zonasData.forEach(function(item){ if(map.hasLayer(item.z) && !objetivo) objetivo=item.z; });
       }
-      if(objetivo && !esMovil()){ objetivo.openPopup(); }
+      // (Popup automático desactivado también en PC)
     }, 450);
   }, 150);
 }
@@ -1341,7 +1355,7 @@ function filtroDia(dia, btn){
     marcadores.forEach(function(m){ if(map.hasLayer(m) && !m._siempre) grupo.addLayer(m); });
     lineasData.forEach(function(item){ if(map.hasLayer(item.l)) grupo.addLayer(item.l); });
     zonasData.forEach(function(item){ if(map.hasLayer(item.z)) grupo.addLayer(item.z); });
-    if(grupo.getLayers().length>0){ map.fitBounds(grupo.getBounds().pad(0.2)); }
+    if(grupo.getLayers().length>0){ map.fitBounds(grupo.getBounds().pad(0.12), {maxZoom:17}); }
   },150);
 }
 
@@ -1373,10 +1387,15 @@ function filtroMapaActividad(actId, lat, lng){
     marcadores.forEach(function(m){ if(map.hasLayer(m) && !m._siempre) grupo.addLayer(m); });
     lineasData.forEach(function(item){ if(map.hasLayer(item.l)) grupo.addLayer(item.l); });
     zonasData.forEach(function(item){ if(map.hasLayer(item.z)) grupo.addLayer(item.z); });
-    if(grupo.getLayers().length>0){ map.fitBounds(grupo.getBounds().pad(0.3)); }
-    else{ map.setView([lat,lng],17); }
-    // En PC, abrir popup del elemento principal automáticamente
-    if(!esMovil()){
+    if(grupo.getLayers().length>0){
+      var bnds = grupo.getBounds();
+      // Si la actividad es compacta (pocos elementos y área pequeña), acercar más
+      var esCompacta = grupo.getLayers().length <= 4;
+      map.fitBounds(bnds.pad(esCompacta ? 0.35 : 0.15), {maxZoom: esCompacta ? 18 : 17});
+    }
+    else{ map.setView([lat,lng],18); }
+    // Popup automático SOLO para Novena y Misa (actividades puntuales en la Catedral)
+    if(!esMovil() && (actId==='novena' || actId==='misa')){
       setTimeout(function(){
         var obj=null, dmin=Infinity;
         marcadores.forEach(function(m){
@@ -1384,8 +1403,6 @@ function filtroMapaActividad(actId, lat, lng){
           var pos=m.getLatLng(); var d=Math.pow(pos.lat-lat,2)+Math.pow(pos.lng-lng,2);
           if(d<dmin){ dmin=d; obj=m; }
         });
-        if(!obj){ zonasData.forEach(function(item){ if(map.hasLayer(item.z)&&!obj) obj=item.z; }); }
-        if(!obj){ lineasData.forEach(function(item){ if(map.hasLayer(item.l)&&!obj) obj=item.mIni; }); }
         if(obj){ obj.openPopup(); }
       }, 400);
     }
@@ -1462,6 +1479,20 @@ function cerrarFoto(){
 }
 
 L.control.scale({imperial:false,metric:true,position:'bottomleft'}).addTo(map);
+
+// ── Reescalar marcadores según el zoom (para no tapar recorridos/zonas) ──
+var _zoomTimer=null, _zoomPrevF=null;
+map.on('zoomend', function(){
+  var fAhora = factorZoom();
+  if(fAhora === _zoomPrevF) return; // solo redibujar si cambió el factor
+  _zoomPrevF = fAhora;
+  clearTimeout(_zoomTimer);
+  _zoomTimer = setTimeout(function(){
+    marcadores.forEach(function(m){
+      if(m._p){ m.setIcon(mkIco(m._p.CATEGORIA, m._p.ROTACION, m._esCab)); }
+    });
+  }, 60);
+});
 </script>
 <div id="visor-foto" onclick="cerrarFoto()"><span class="cerrar" onclick="cerrarFoto()">&times;</span><img id="visor-foto-img" src="" alt=""></div>
 </body>
