@@ -50,6 +50,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; height: 100
 .it strong { color: #1a1a1a; }
 
 /* LEYENDA */
+#ley-toggle { display: none; }
 #ley { position: absolute; bottom: 24px; right: 8px; z-index: 1000; background: rgba(255,255,255,0.96); border: 1px solid #dee2e6; border-radius: 10px; padding: 9px 12px; min-width: 155px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 #ley h4 { font-size: 10px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; font-weight: 700; }
 .li { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #1a1a1a; margin-bottom: 3px; }
@@ -113,7 +114,12 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; height: 100
   .flbl { font-size: 9px; }
 
   /* Leyenda más compacta, colapsable */
-  #ley { bottom: 30px; right: 6px; padding: 8px 10px; min-width: 130px; max-width: 45vw; max-height: 45vh; overflow-y: auto; }
+  #ley { bottom: 30px; right: 6px; padding: 8px 10px; min-width: 0; max-width: 44vw; max-height: 42vh; overflow-y: auto; transition: max-height 0.25s, padding 0.25s; }
+  #ley.colapsada { max-height: 34px; overflow: hidden; padding: 6px 10px; }
+  #ley-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 700; font-size: 11px; color: #1F3864; margin: -2px 0 4px; gap: 8px; }
+  #ley.colapsada #ley-toggle { margin-bottom: 0; }
+  #ley.colapsada .ley-body { display: none; }
+  .ley-h4-desktop { display: none; }
   #ley h4 { font-size: 9px; }
   .li { font-size: 10px; margin-bottom: 3px; gap: 5px; }
   .lc { width: 10px; height: 10px; }
@@ -773,7 +779,9 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; height: 100
 </div>
 
 <div id="ley" style="display:none">
-  <h4>Leyenda</h4>
+  <div id="ley-toggle" onclick="toggleLeyenda()"><span>Leyenda</span><span id="ley-caret">▾</span></div>
+  <div class="ley-body">
+  <h4 class="ley-h4-desktop">Leyenda</h4>
   <div class="li" data-leycat="Actividades Festivas"><div class="lc" style="background:#D85A30"></div>Actividades Festivas</div>
   <div class="li" data-leycat="Actos Religiosos"><div class="lc" style="background:#D4537E"></div>Actos Religiosos</div>
   <div class="li" data-leycat="Juegos de Toros"><div class="lc" style="background:#BA7517"></div>Juegos de Toros</div>
@@ -807,6 +815,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; height: 100
   <hr class="hr"/>
   <div class="li"><div class="lc" style="background:#1D9E75"></div>🅰️ Punto de Inicio</div>
   <div class="li"><div class="lc" style="background:#C0392B"></div>🅱️ Punto de Fin</div>
+  </div>
 </div>
 
 <script>
@@ -1394,8 +1403,8 @@ function filtroMapaActividad(actId, lat, lng){
       map.fitBounds(bnds.pad(esCompacta ? 0.35 : 0.15), {maxZoom: esCompacta ? 18 : 17});
     }
     else{ map.setView([lat,lng],18); }
-    // Popup automático SOLO para Novena y Misa (actividades puntuales en la Catedral)
-    if(!esMovil() && (actId==='novena' || actId==='misa')){
+    // Popup automático para Novena y Misa (NO procesión), también en celular
+    if(actId==='novena' || actId==='misa'){
       setTimeout(function(){
         var obj=null, dmin=Infinity;
         marcadores.forEach(function(m){
@@ -1404,7 +1413,7 @@ function filtroMapaActividad(actId, lat, lng){
           if(d<dmin){ dmin=d; obj=m; }
         });
         if(obj){ obj.openPopup(); }
-      }, 400);
+      }, 450);
     }
   },150);
 }
@@ -1414,6 +1423,23 @@ function seleccionarActividadMapa(actId, lat, lng){
   irAlMapa(lat, lng, actId);
 }
 
+// Colapsar/expandir leyenda (útil en celular para no tapar el mapa)
+function toggleLeyenda(){
+  var ley = document.getElementById('ley');
+  ley.classList.toggle('colapsada');
+  var caret = document.getElementById('ley-caret');
+  if(caret) caret.textContent = ley.classList.contains('colapsada') ? '▸' : '▾';
+}
+// En celular, la leyenda arranca colapsada para no tapar el mapa
+if(esMovil()){
+  var _leyInit = document.getElementById('ley');
+  if(_leyInit){
+    _leyInit.classList.add('colapsada');
+    var _c = document.getElementById('ley-caret');
+    if(_c) _c.textContent = '▸';
+  }
+}
+
 // ── TABS ─────────────────────────────────────────────────────
 function showTab(tab, el){
   ['mapa','programa','info'].forEach(function(t){ document.getElementById(t).style.display='none'; });
@@ -1421,6 +1447,11 @@ function showTab(tab, el){
   document.getElementById('fb-dias').style.display = tab==='mapa' ? 'flex':'none';
   if(tab!=='mapa'){ var bda=document.getElementById('fb-dia-acts'); if(bda) bda.style.display='none'; }
   document.getElementById('ley').style.display = tab==='mapa' ? 'block':'none';
+  // En móvil, la leyenda arranca colapsada para no tapar el mapa
+  if(tab==='mapa' && window.innerWidth<=640){
+    document.getElementById('ley').classList.add('colapsada');
+    var caret=document.getElementById('ley-caret'); if(caret) caret.textContent='▸';
+  }
   document.getElementById(tab).style.display='block';
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
   el.classList.add('on');
