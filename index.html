@@ -418,6 +418,14 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; height: 100
         <div class="ec-seccion-titulo">📜 Decreto Alcaldicio — Artículo TERCERO</div>
         <div class="ec-decreto-box">Inicia a las 9:00 a.m. luego del running. Dos recorridos: 🟠 80 km para Elites y Juveniles (retorno en Boró) y 🩵 60 km para Master A, B, C y Prejuveniles (retorno en La Mesa). Salida controlada desde la Placita hasta La Soledad, continuando por la vía Interamericana.</div>
       </div>
+      <div class="ec-seccion">
+        <div class="ec-seccion-titulo">📝 Inscripciones</div>
+        <div class="ec-decreto-box">Inscripciones: <b>6206-2264</b> o el mismo día del evento desde las 7:00 a.m.</div>
+      </div>
+      <div class="ec-seccion">
+        <div class="ec-seccion-titulo">📷 Multimedia</div>
+        <img class="ec-foto" src="media/carrera_ciclismo_1.jpg" alt="carrera_ciclismo" onclick="event.stopPropagation(); ampliarFoto(this.src)" loading="lazy">
+      </div>
     </div>
   </div>
   <div class="dh">🎉 Viernes 31 de julio</div>
@@ -827,7 +835,7 @@ var RUTA_COL = {
 
 var marcadores=[], lineasData=[], zonasData=[], flechasCabalgata=[];
 // Actividades con foto disponible en carpeta media/
-var FOTOS_DISPONIBLES = ['area_tipica','bebidas','buhonerias','cabalgata_pequena','caballitos','carrera_atletica','carrera_santiago','experiencias','gimnasio','iron_city','juegos_toros','mega_cabalgata','misa','novena','paseo_carretas','procesion','sarao','tarima_familiar','veredas','zona_guerra'];
+var FOTOS_DISPONIBLES = ['area_tipica','bebidas','buhonerias','cabalgata_pequena','caballitos','carrera_atletica','carrera_ciclismo','carrera_santiago','experiencias','gimnasio','iron_city','juegos_toros','mega_cabalgata','misa','novena','paseo_carretas','procesion','sarao','tarima_familiar','veredas','zona_guerra'];
 function tieneActFoto(actId){
   if(!actId) return null;
   var lista = actId.split(',');
