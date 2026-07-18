@@ -690,7 +690,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; height: 100
       </div>
       <div class="ec-seccion">
         <div class="ec-seccion-titulo">📷 Multimedia</div>
-        <img class="ec-foto" src="media/skynet_1.jpg" alt="skynet" onclick="event.stopPropagation(); ampliarFoto(this.src)" loading="lazy">
+        <img class="ec-foto" src="media/skynet_1.jpeg" alt="skynet" onclick="event.stopPropagation(); ampliarFoto(this.src)" loading="lazy">
       </div>
     </div>
   </div>
@@ -715,7 +715,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; height: 100
       </div>
       <div class="ec-seccion">
         <div class="ec-seccion-titulo">📷 Multimedia</div>
-        <img class="ec-foto" src="media/x_zone_1.jpg" alt="x_zone" onclick="event.stopPropagation(); ampliarFoto(this.src)" loading="lazy">
+        <img class="ec-foto" src="media/x_zone_1.jpeg" alt="x_zone" onclick="event.stopPropagation(); ampliarFoto(this.src)" loading="lazy">
       </div>
     </div>
   </div>
@@ -893,6 +893,8 @@ var RUTA_COL = {
 var marcadores=[], lineasData=[], zonasData=[], flechasCabalgata=[];
 // Actividades con foto disponible en carpeta media/
 var FOTOS_DISPONIBLES = ['area_tipica','bebidas','buhonerias','cabalgata_pequena','caballitos','carrera_atletica','carrera_ciclismo','carrera_santiago','experiencias','skynet','x_zone','iron_city','juegos_toros','mega_cabalgata','misa','novena','paseo_carretas','procesion','sarao','tarima_familiar','veredas','zona_guerra'];
+// Extensión real del archivo por actividad (por defecto 'jpg'; excepciones aquí)
+var FOTO_EXT = {'skynet':'jpeg','x_zone':'jpeg'};
 function tieneActFoto(actId){
   if(!actId) return null;
   var lista = actId.split(',');
@@ -1050,7 +1052,7 @@ function mkPop(p, tipoLabel){
   if(sinMedia.indexOf(p.CATEGORIA)===-1){
     var actFoto = tieneActFoto(p.ACTIVIDAD_ID);
     if(actFoto){
-      media = '<img class="pp-foto" src="media/'+actFoto+'_1.jpg" alt="'+p.NOMBRE+'" onclick="event.stopPropagation(); ampliarFoto(this.src)" loading="lazy">';
+      media = '<img class="pp-foto" src="media/'+actFoto+'_1.'+(FOTO_EXT[actFoto]||'jpg')+'" alt="'+p.NOMBRE+'" onclick="event.stopPropagation(); ampliarFoto(this.src)" loading="lazy">';
     }
   }
   return '<div style="max-width:270px"><div class="pt">'+e+' '+p.NOMBRE+'</div>'+rows+
